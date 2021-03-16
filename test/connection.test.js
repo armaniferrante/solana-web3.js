@@ -1984,6 +1984,31 @@ describe('Connection', () => {
       await connection.removeRootChangeListener(subscriptionId);
     });
 
+    it('logs notification', async () => {
+      let listener;
+      const owner = new Account();
+      const logs = await new Promise(resolve => {
+        listener = connection.onLogs('all', logs => {
+          resolve(logs);
+        });
+        // Execute a transaction so that we can pickup its logs.
+        helpers.airdrop({
+          connection,
+          address: owner.publicKey,
+          amount: LAMPORTS_PER_SOL,
+        });
+      });
+      expect(logs.context.slot).to.be.greaterThan(0);
+      expect(logs.value.logs.length).to.eq(2);
+      expect(logs.value.logs[0]).to.eq(
+        'Program 11111111111111111111111111111111 invoke [1]',
+      );
+      expect(logs.value.logs[1]).to.eq(
+        'Program 11111111111111111111111111111111 success',
+      );
+      await connection.removeOnLogsListener(listener);
+    });
+
     it('https request', async () => {
       const connection = new Connection('https://devnet.solana.com');
       const version = await connection.getVersion();
